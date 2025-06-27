@@ -25,6 +25,7 @@ git push origin main
    ```
    JWT_SECRET=your-secret-key-here
    MYSQL_HOST=your-db-host
+   MYSQL_PORT=25060
    MYSQL_USER=your-db-user
    MYSQL_PASS=your-db-password
    MYSQL_DB=arkane_settings

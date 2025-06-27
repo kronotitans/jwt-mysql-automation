@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 # Configuration from environment variables with defaults
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+MYSQL_PORT = int(os.getenv('MYSQL_PORT', '3306'))
 MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASS = os.getenv('MYSQL_PASS', 'rootpassword')
 MYSQL_DB = os.getenv('MYSQL_DB', 'arkane_settings')
@@ -36,6 +37,7 @@ def wait_for_mysql(max_retries=30, delay=2):
         try:
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
+                port=MYSQL_PORT,
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
                 connection_timeout=5
@@ -56,7 +58,10 @@ def init_db():
     """Initialize database and table if they don't exist"""
     try:
         conn = mysql.connector.connect(
-            host=MYSQL_HOST, user=MYSQL_USER, password=MYSQL_PASS)
+            host=MYSQL_HOST, 
+            port=MYSQL_PORT,
+            user=MYSQL_USER, 
+            password=MYSQL_PASS)
         cursor = conn.cursor()
         
         # Create database if it doesn't exist
@@ -116,6 +121,7 @@ def update_token():
         
         conn = mysql.connector.connect(
             host=MYSQL_HOST, 
+            port=MYSQL_PORT,
             user=MYSQL_USER, 
             password=MYSQL_PASS, 
             database=MYSQL_DB
@@ -147,6 +153,7 @@ def get_current_token():
     try:
         conn = mysql.connector.connect(
             host=MYSQL_HOST, 
+            port=MYSQL_PORT,
             user=MYSQL_USER, 
             password=MYSQL_PASS, 
             database=MYSQL_DB
@@ -194,6 +201,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             # Test database connection
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
+                port=MYSQL_PORT,
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
                 database=MYSQL_DB,
@@ -231,6 +239,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         try:
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
+                port=MYSQL_PORT,
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
                 database=MYSQL_DB,

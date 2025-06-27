@@ -71,6 +71,7 @@ When you push to `main` branch, GitHub Actions will:
 3. **Configure Environment Variables**:
    ```env
    MYSQL_HOST=mysql-cluster-do-user-xxxxx.db.ondigitalocean.com
+   MYSQL_PORT=25060
    MYSQL_USER=doadmin
    MYSQL_PASS=your-secure-password
    MYSQL_DB=arkane_settings
@@ -109,6 +110,7 @@ When you push to `main` branch, GitHub Actions will:
    # Create environment file
    cat > .env << EOF
    MYSQL_HOST=your-managed-db-host.db.ondigitalocean.com
+   MYSQL_PORT=25060
    MYSQL_USER=doadmin
    MYSQL_PASS=your-db-password
    MYSQL_DB=arkane_settings
