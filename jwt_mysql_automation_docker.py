@@ -138,8 +138,7 @@ def update_token():
         # Use SSL for managed databases
         ssl_config = {
             'ssl_disabled': False,
-            'ssl_verify_cert': True,
-            'ssl_verify_identity': False
+            'ssl_ca': CA_CERT_PATH
         } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
         
         conn = mysql.connector.connect(
@@ -178,8 +177,7 @@ def get_current_token():
         # Use SSL for managed databases
         ssl_config = {
             'ssl_disabled': False,
-            'ssl_verify_cert': True,
-            'ssl_verify_identity': False
+            'ssl_ca': CA_CERT_PATH
         } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
         
         conn = mysql.connector.connect(
@@ -233,8 +231,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             # Use SSL for managed databases
             ssl_config = {
                 'ssl_disabled': False,
-                'ssl_verify_cert': True,
-                'ssl_verify_identity': False
+                'ssl_ca': CA_CERT_PATH
             } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
             
             # Test database connection
@@ -280,8 +277,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             # Use SSL for managed databases
             ssl_config = {
                 'ssl_disabled': False,
-                'ssl_verify_cert': True,
-                'ssl_verify_identity': False
+                'ssl_ca': CA_CERT_PATH
             } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
             
             conn = mysql.connector.connect(
