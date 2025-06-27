@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: jwt_mysql_db
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASS:-secure_root_password_2025}
+      MYSQL_DATABASE: ${MYSQL_DB:-arkane_settings}
+      MYSQL_USER: ${MYSQL_USER_NAME:-arkane_user}
+      MYSQL_PASSWORD: ${MYSQL_USER_PASS:-secure_user_password_2025}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - jwt_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  jwt_automation:
+    build: .
+    container_name: jwt_automation_service
+    environment:
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASS: ${MYSQL_PASS:-secure_root_password_2025}
+      MYSQL_DB: ${MYSQL_DB:-arkane_settings}
+      JWT_SECRET: ${JWT_SECRET:-secure_jwt_secret_key_2025}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - jwt_network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  mysql_data:
+
+networks:
+  jwt_network:
+    driver: bridge

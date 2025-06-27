@@ -1,0 +1,36 @@
+name: jwt-mysql-automation
+services:
+- name: jwt-automation-service
+  source_dir: /
+  github:
+    repo: your-github-username/your-repo-name
+    branch: main
+  build_command: docker build -t jwt-automation .
+  docker:
+    dockerfile_path: Dockerfile
+  environment_slug: docker
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: MYSQL_HOST
+    value: ${mysql.HOSTNAME}
+    type: SECRET
+  - key: MYSQL_USER
+    value: ${mysql.USERNAME}
+    type: SECRET
+  - key: MYSQL_PASS
+    value: ${mysql.PASSWORD}  
+    type: SECRET
+  - key: MYSQL_DB
+    value: ${mysql.DATABASE}
+    type: SECRET
+  - key: JWT_SECRET
+    value: your_jwt_secret_here
+    type: SECRET
+  
+databases:
+- name: mysql
+  engine: MYSQL
+  num_nodes: 1
+  size: db-s-1vcpu-1gb
+  version: "8"
