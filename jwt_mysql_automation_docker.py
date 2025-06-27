@@ -4,6 +4,9 @@ import time
 import schedule
 import os
 import logging
+import threading
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime, timedelta, timezone
 
 # Configuration from environment variables with defaults
@@ -176,6 +179,112 @@ def get_current_token():
     except mysql.connector.Error as err:
         logger.error(f"Database error: {err}")
 
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            self.health_check()
+        elif self.path == '/status':
+            self.status_check()
+        else:
+            self.send_error(404)
+
+    def health_check(self):
+        """Basic health check endpoint"""
+        try:
+            # Test database connection
+            conn = mysql.connector.connect(
+                host=MYSQL_HOST,
+                user=MYSQL_USER,
+                password=MYSQL_PASS,
+                database=MYSQL_DB,
+                connection_timeout=5
+            )
+            conn.close()
+            
+            response = {
+                "status": "healthy",
+                "timestamp": datetime.now().isoformat(),
+                "service": "jwt-mysql-automation",
+                "database": "connected"
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            response = {
+                "status": "unhealthy",
+                "timestamp": datetime.now().isoformat(),
+                "service": "jwt-mysql-automation",
+                "error": str(e)
+            }
+            
+            self.send_response(503)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+
+    def status_check(self):
+        """Detailed status endpoint"""
+        try:
+            conn = mysql.connector.connect(
+                host=MYSQL_HOST,
+                user=MYSQL_USER,
+                password=MYSQL_PASS,
+                database=MYSQL_DB,
+                connection_timeout=5
+            )
+            cursor = conn.cursor()
+            
+            # Check if token exists
+            cursor.execute("SELECT AccessToken, updated_at FROM arkane_settings WHERE Type = 'Arkane'")
+            result = cursor.fetchone()
+            
+            response = {
+                "status": "operational",
+                "timestamp": datetime.now().isoformat(),
+                "service": "jwt-mysql-automation",
+                "database": "connected",
+                "token_exists": result is not None,
+                "last_update": result[1].isoformat() if result and result[1] else None
+            }
+            
+            cursor.close()
+            conn.close()
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            response = {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "service": "jwt-mysql-automation",
+                "error": str(e)
+            }
+            
+            self.send_response(503)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+
+    def log_message(self, format, *args):
+        # Suppress default logging
+        pass
+
+def start_health_server():
+    """Start health check server in background thread"""
+    try:
+        server = HTTPServer(('0.0.0.0', 8080), HealthCheckHandler)
+        logger.info("Health check server started on port 8080")
+        server.serve_forever()
+    except Exception as e:
+        logger.error(f"Failed to start health server: {e}")
+
 def main():
     """Main function to run the JWT automation service"""
     logger.info("=== JWT MySQL Automation Service (Docker) ===")
@@ -203,6 +312,10 @@ def main():
         logger.info("Generating initial token...")
         update_token()
         get_current_token()
+        
+        # Start health check server
+        health_thread = threading.Thread(target=start_health_server, daemon=True)
+        health_thread.start()
         
         logger.info("Service is running. Press Ctrl+C to stop.")
         logger.info("Token will be updated every 5 minutes...")

@@ -1,16 +1,28 @@
 name: jwt-mysql-automation
+region: nyc3
+
 services:
 - name: jwt-automation-service
-  source_dir: /
-  github:
-    repo: your-github-username/your-repo-name
-    branch: main
-  build_command: docker build -t jwt-automation .
-  docker:
-    dockerfile_path: Dockerfile
-  environment_slug: docker
+  # Use pre-built Docker image from Docker Hub
+  image:
+    registry_type: DOCKER_HUB
+    registry: kronotitans
+    repository: jwt-mysql-automation
+    tag: latest
+  
   instance_count: 1
   instance_size_slug: basic-xxs
+  
+  # Health check configuration
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 30
+    period_seconds: 30
+    timeout_seconds: 10
+    success_threshold: 1
+    failure_threshold: 3
+  
+  # Environment variables (configure these in DigitalOcean dashboard)
   envs:
   - key: MYSQL_HOST
     value: ${mysql.HOSTNAME}
@@ -19,18 +31,34 @@ services:
     value: ${mysql.USERNAME}
     type: SECRET
   - key: MYSQL_PASS
-    value: ${mysql.PASSWORD}  
+    value: ${mysql.PASSWORD}
     type: SECRET
   - key: MYSQL_DB
     value: ${mysql.DATABASE}
     type: SECRET
   - key: JWT_SECRET
-    value: your_jwt_secret_here
+    value: "super_secure_jwt_secret_production_2025"
     type: SECRET
-  
+  - key: ENVIRONMENT
+    value: "production"
+  - key: LOG_LEVEL
+    value: "INFO"
+
+# Optional: DigitalOcean Managed Database
 databases:
 - name: mysql
   engine: MYSQL
   num_nodes: 1
   size: db-s-1vcpu-1gb
   version: "8"
+
+# Alternative: Self-contained (no separate database)
+# Remove the databases section above and use these environment variables:
+# envs:
+# - key: MYSQL_HOST
+#   value: "localhost"
+# - key: MYSQL_USER
+#   value: "root"
+# - key: MYSQL_PASS
+#   value: "secure_production_password_2025"
+#   type: SECRET

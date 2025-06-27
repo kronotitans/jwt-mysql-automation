@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  jwt_automation:
+    build: .
+    container_name: jwt_automation_service
+    environment:
+      # Use DigitalOcean Managed Database
+      MYSQL_HOST: ${MANAGED_DB_HOST}
+      MYSQL_USER: ${MANAGED_DB_USER}
+      MYSQL_PASS: ${MANAGED_DB_PASS}
+      MYSQL_DB: ${MANAGED_DB_NAME}
+      JWT_SECRET: ${JWT_SECRET:-secure_jwt_secret_key_2025}
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "8080:8080"
+
+# No MySQL service needed when using managed database
