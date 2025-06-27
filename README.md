@@ -157,4 +157,4 @@ MIT License - see LICENSE file for details.
 ## Support
 
 For deployment issues, see [DEPLOYMENT.md](DEPLOYMENT.md).
-For technical issues, check the logs and container health status.
+For technical issues, check the logs and container health status..
