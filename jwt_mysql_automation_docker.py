@@ -338,6 +338,46 @@ def start_health_server():
     except Exception as e:
         logger.error(f"Failed to start health server: {e}")
 
+def init_demo_db():
+    """Initialize demo database and users table with sample data if not present."""
+    try:
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_ca': CA_CERT_PATH
+        } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASS,
+            **ssl_config
+        )
+        cursor = conn.cursor()
+        # Create demo database
+        cursor.execute("CREATE DATABASE IF NOT EXISTS demo;")
+        conn.database = 'demo'
+        # Create users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        # Insert sample data
+        sample_users = [
+            'john_doe', 'jane_smith', 'bob_wilson', 'alice_johnson',
+            'charlie_brown', 'sarah_connor', 'mike_tyson', 'emma_watson'
+        ]
+        for user in sample_users:
+            cursor.execute("INSERT IGNORE INTO users (username) VALUES (%s)", (user,))
+        conn.commit()
+        logger.info("Demo database and users table initialized with sample data.")
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        logger.error(f"Demo DB initialization error: {err}")
+
 def main():
     """Main function to run the JWT automation service"""
     logger.info("=== JWT MySQL Automation Service (Docker) ===")
@@ -362,6 +402,7 @@ def main():
         # Initialize database
         logger.info("Initializing database...")
         init_db()
+        init_demo_db()
         
         # Schedule token updates every 5 minutes
         schedule.every(5).minutes.do(update_token)
