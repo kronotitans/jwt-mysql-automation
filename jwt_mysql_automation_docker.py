@@ -105,20 +105,19 @@ def init_db():
 
 def generate_jwt():
     """Generate a new JWT token with 5-minute expiration"""
-    now = datetime.now(timezone.utc)
     payload = {
         "sub": "arkane_user",
-        "iss": "arkane_system_docker",
+        "iss": "arkane_system",
         "aud": "arkane_services",
-        "exp": now + timedelta(minutes=5),
-        "iat": now,
-        "jti": str(int(time.time())),  # Unique token ID
-        "env": "docker"
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        "iat": datetime.now(timezone.utc),
+        "jti": str(int(time.time()))  # Unique token ID
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+    return token
 
 def update_token():
-    """Generate new JWT token and update it in the database"""
+    """Generate new demo token and update it in the database"""
     try:
         token = generate_jwt()
         ssl_config = {
@@ -170,17 +169,8 @@ def get_current_token():
         result = cursor.fetchone()
         if result:
             token = result[0]
-            logger.info(f"Current token: {token[:50]}..." if len(token) > 50 else f"Current token: {token}")
-            # Decode and show token info
-            try:
-                decoded = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO], options={"verify_aud": False})
-                exp_time = datetime.fromtimestamp(decoded['exp'])
-                logger.info(f"Token expires at: {exp_time}")
-                logger.info(f"Time until expiration: {exp_time - datetime.now(timezone.utc)}")
-            except jwt.ExpiredSignatureError:
-                logger.warning("⚠ Token has expired!")
-            except Exception as e:
-                logger.error(f"Could not decode token: {e}")
+            logger.info(f"Current token: {token}")
+            logger.info(f"Token updated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         else:
             logger.warning("No token found in database")
         cursor.close()
@@ -221,7 +211,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             response = {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
-                "service": "jwt-mysql-automation",
+                "service": "demo-token-mysql-automation",
                 "database": "connected"
             }
             
@@ -351,8 +341,8 @@ def init_demo_db():
         logger.error(f"Demo DB initialization error: {err}")
 
 def main():
-    """Main function to run the JWT automation service"""
-    logger.info("=== JWT MySQL Automation Service (Docker) ===")
+    """Main function to run the demo token automation service"""
+    logger.info("=== Demo Token MySQL Automation Service (Docker) ===")
     logger.info(f"Starting at {datetime.now()}")
     logger.info(f"MySQL Host: {MYSQL_HOST}")
     logger.info(f"MySQL Port: {MYSQL_PORT}")
@@ -380,7 +370,7 @@ def main():
         schedule.every(5).minutes.do(update_token)
         
         # Generate initial token
-        logger.info("Generating initial token...")
+        logger.info("Generating initial demo token...")
         update_token()
         get_current_token()
         
@@ -389,7 +379,7 @@ def main():
         health_thread.start()
         
         logger.info("Service is running. Press Ctrl+C to stop.")
-        logger.info("Token will be updated every 5 minutes...")
+        logger.info("Demo token will be updated every 5 minutes...")
         logger.info("Health check available at http://localhost:8080/health")
         logger.info("Status check available at http://localhost:8080/status")
         
