@@ -19,6 +19,7 @@ TABLE_NAME = 'arkane_settings'
 JWT_SECRET = os.getenv('JWT_SECRET', 'docker_jwt_secret_key_2025')
 JWT_ALGO = 'HS256'
 TYPE = 'Arkane'
+CA_CERT_PATH = os.path.join(os.path.dirname(__file__), 'ca-certificate.crt')
 
 # Setup logging
 logging.basicConfig(
@@ -38,8 +39,7 @@ def wait_for_mysql(max_retries=30, delay=2):
             # Use SSL for managed databases
             ssl_config = {
                 'ssl_disabled': False,
-                'ssl_verify_cert': True,
-                'ssl_verify_identity': False
+                'ssl_ca': CA_CERT_PATH
             } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
             
             conn = mysql.connector.connect(
@@ -68,8 +68,7 @@ def init_db():
         # Use SSL for managed databases
         ssl_config = {
             'ssl_disabled': False,
-            'ssl_verify_cert': True,
-            'ssl_verify_identity': False
+            'ssl_ca': CA_CERT_PATH
         } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
         
         conn = mysql.connector.connect(
@@ -104,6 +103,7 @@ def init_db():
         count = cursor.fetchone()[0]
         
         if count == 0:
+            cursor.execute
             cursor.execute(f"INSERT INTO {TABLE_NAME} (AccessToken, Type) VALUES ('', %s);", (TYPE,))
             logger.info(f"Initial record for Type '{TYPE}' created")
         
