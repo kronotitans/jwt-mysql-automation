@@ -35,12 +35,20 @@ def wait_for_mysql(max_retries=30, delay=2):
     """Wait for MySQL to be available"""
     for attempt in range(max_retries):
         try:
+            # Use SSL for managed databases
+            ssl_config = {
+                'ssl_disabled': False,
+                'ssl_verify_cert': True,
+                'ssl_verify_identity': False
+            } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+            
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
                 port=MYSQL_PORT,
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
-                connection_timeout=5
+                connection_timeout=10,
+                **ssl_config
             )
             conn.close()
             logger.info("✓ MySQL connection successful")
@@ -57,11 +65,19 @@ def wait_for_mysql(max_retries=30, delay=2):
 def init_db():
     """Initialize database and table if they don't exist"""
     try:
+        # Use SSL for managed databases
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_verify_cert': True,
+            'ssl_verify_identity': False
+        } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+        
         conn = mysql.connector.connect(
             host=MYSQL_HOST, 
             port=MYSQL_PORT,
             user=MYSQL_USER, 
-            password=MYSQL_PASS)
+            password=MYSQL_PASS,
+            **ssl_config)
         cursor = conn.cursor()
         
         # Create database if it doesn't exist
@@ -119,12 +135,20 @@ def update_token():
     try:
         token = generate_jwt()
         
+        # Use SSL for managed databases
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_verify_cert': True,
+            'ssl_verify_identity': False
+        } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+        
         conn = mysql.connector.connect(
             host=MYSQL_HOST, 
             port=MYSQL_PORT,
             user=MYSQL_USER, 
             password=MYSQL_PASS, 
-            database=MYSQL_DB
+            database=MYSQL_DB,
+            **ssl_config
         )
         cursor = conn.cursor()
         
@@ -151,12 +175,20 @@ def update_token():
 def get_current_token():
     """Retrieve and display the current token from database"""
     try:
+        # Use SSL for managed databases
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_verify_cert': True,
+            'ssl_verify_identity': False
+        } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+        
         conn = mysql.connector.connect(
             host=MYSQL_HOST, 
             port=MYSQL_PORT,
             user=MYSQL_USER, 
             password=MYSQL_PASS, 
-            database=MYSQL_DB
+            database=MYSQL_DB,
+            **ssl_config
         )
         cursor = conn.cursor()
         
@@ -198,6 +230,13 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
     def health_check(self):
         """Basic health check endpoint"""
         try:
+            # Use SSL for managed databases
+            ssl_config = {
+                'ssl_disabled': False,
+                'ssl_verify_cert': True,
+                'ssl_verify_identity': False
+            } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+            
             # Test database connection
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
@@ -205,7 +244,8 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
                 database=MYSQL_DB,
-                connection_timeout=5
+                connection_timeout=10,
+                **ssl_config
             )
             conn.close()
             
@@ -237,13 +277,21 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
     def status_check(self):
         """Detailed status endpoint"""
         try:
+            # Use SSL for managed databases
+            ssl_config = {
+                'ssl_disabled': False,
+                'ssl_verify_cert': True,
+                'ssl_verify_identity': False
+            } if MYSQL_HOST != 'localhost' and MYSQL_HOST != 'mysql' else {}
+            
             conn = mysql.connector.connect(
                 host=MYSQL_HOST,
                 port=MYSQL_PORT,
                 user=MYSQL_USER,
                 password=MYSQL_PASS,
                 database=MYSQL_DB,
-                connection_timeout=5
+                connection_timeout=10,
+                **ssl_config
             )
             cursor = conn.cursor()
             
@@ -299,9 +347,12 @@ def main():
     logger.info("=== JWT MySQL Automation Service (Docker) ===")
     logger.info(f"Starting at {datetime.now()}")
     logger.info(f"MySQL Host: {MYSQL_HOST}")
+    logger.info(f"MySQL Port: {MYSQL_PORT}")
+    logger.info(f"MySQL User: {MYSQL_USER}")
     logger.info(f"Database: {MYSQL_DB}")
     logger.info(f"Table: {TABLE_NAME}")
     logger.info(f"Update interval: 5 minutes")
+    logger.info(f"SSL enabled for remote connections: {MYSQL_HOST not in ['localhost', 'mysql']}")
     logger.info("=" * 50)
     
     try:
@@ -309,9 +360,11 @@ def main():
         logger.info("Waiting for MySQL to be available...")
         if not wait_for_mysql():
             logger.error("Failed to connect to MySQL. Exiting.")
+            logger.error("Please check your database credentials and network connectivity.")
             return
         
         # Initialize database
+        logger.info("Initializing database...")
         init_db()
         
         # Schedule token updates every 5 minutes
@@ -328,6 +381,8 @@ def main():
         
         logger.info("Service is running. Press Ctrl+C to stop.")
         logger.info("Token will be updated every 5 minutes...")
+        logger.info("Health check available at http://localhost:8080/health")
+        logger.info("Status check available at http://localhost:8080/status")
         
         # Main loop
         while True:
@@ -338,6 +393,7 @@ def main():
         logger.info("Service stopped by user")
     except Exception as e:
         logger.error(f"Service error: {e}")
+        logger.error("Check database connection and credentials")
 
 if __name__ == "__main__":
     main()

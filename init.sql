@@ -13,13 +13,27 @@ CREATE TABLE IF NOT EXISTS arkane_settings (
 -- Insert initial record
 INSERT IGNORE INTO arkane_settings (AccessToken, Type) VALUES ('', 'Arkane');
 
--- Create demo database and users table
+-- Create database if it doesn't exist
 CREATE DATABASE IF NOT EXISTS demo;
 USE demo;
 
+-- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO users (username) VALUES ('alice'), ('bob'), ('charlie');
+-- Insert sample data
+INSERT IGNORE INTO users (username) VALUES 
+('john_doe'),
+('jane_smith'),
+('bob_wilson'),
+('alice_johnson'),
+('charlie_brown'),
+('sarah_connor'),
+('mike_tyson'),
+('emma_watson');
+
+-- Show the data
+SELECT * FROM users;
